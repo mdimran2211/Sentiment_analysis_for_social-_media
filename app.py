@@ -8,7 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import SVC
 
 # --- Page Config ---
-st.set_page_config(page_title="Sentiment Analyzer Pro", layout="wide", page_icon="🚀")
+st.set_page_config(page_title="Sentiment Analyzer Pro", layout="wide")
 
 # --- NLP Resources ---
 @st.cache_resource
@@ -33,8 +33,7 @@ def clean_text(text):
 # --- Load & Train Model (Cached for Speed) ---
 @st.cache_resource
 def train_model():
-    # Ensure this file is in your GitHub repo
-    df = pd.read_csv('sentimentdataset.csv') 
+    df = pd.read_csv('sentimentdataset.csv')
     df['cleaned_text'] = df['Text'].apply(clean_text)
     df['Sentiment'] = df['Sentiment'].str.strip()
     
@@ -48,53 +47,45 @@ def train_model():
 
 model, tfidf = train_model()
 
-# --- Streamlit UI Header ---
-st.title("🚀 Automated Sentiment Analysis Tool")
-st.markdown("#### Harnessing the power of **SVM (Support Vector Machine)** for real-time classification of social media text and trends.")
-st.info("This system uses machine learning to categorize sentiments from unstructured social media data.")
+# --- Streamlit UI ---
+st.title("🚀 Social Media Sentiment Analysis Tool")
+st.markdown("Developed with **SVM (Support Vector Machine)** as per Project Synopsis.")
 
 # Sidebar for Navigation
-st.sidebar.header("Navigation")
 option = st.sidebar.selectbox("Choose Action", ["Home & Manual Test", "Live Topic Analysis"])
 
 if option == "Home & Manual Test":
     st.subheader("📝 Analyze Custom Text")
-    user_input = st.text_area("Enter a social media post/comment:", placeholder="Type here...", height=150)
+    user_input = st.text_area("Enter a social media post/comment:", placeholder="Type here...")
     
-    if st.button("Predict Sentiment", use_container_width=True):
+    if st.button("Predict Sentiment"):
         if user_input:
             cleaned = clean_text(user_input)
             vec = tfidf.transform([cleaned])
             prediction = model.predict(vec)[0]
             
-            # Professional Result Display
-            st.write("---")
-            col1, col2 = st.columns([1, 2])
-            with col1:
-                st.metric(label="Predicted Sentiment", value=prediction)
-            
-            with col2:
-                if any(word in prediction for word in ["Positive", "Joy", "Happy", "Excited"]):
-                    st.success(f"The text expresses a **{prediction}** sentiment. 😊")
-                elif any(word in prediction for word in ["Negative", "Angry", "Sad", "Bad"]):
-                    st.error(f"The text expresses a **{prediction}** sentiment. 😠")
-                else:
-                    st.info(f"The text is classified as **{prediction}**. 😐")
+            # Display Result with Color
+            if "Positive" in prediction:
+                st.success(f"Sentiment: {prediction} 😊")
+            elif "Negative" in prediction:
+                st.error(f"Sentiment: {prediction} 😠")
+            else:
+                st.info(f"Sentiment: {prediction} 😐")
         else:
             st.warning("Please enter some text first.")
 
 elif option == "Live Topic Analysis":
-    st.subheader("🌐 Real-time Simulation (Market Trend Analysis)")
-    topic = st.text_input("Enter a trending topic to simulate analysis:", "Artificial Intelligence")
+    st.subheader("🌐 Real-time Simulation (API Fallback)")
+    topic = st.text_input("Enter a trending topic:", "IPL 2024")
     
-    if st.button("Fetch & Analyze Trends", use_container_width=True):
+    if st.button("Fetch & Analyze"):
         # Simulated Live Tweets
         mock_tweets = [
-            f"The future of {topic} looks incredibly promising and bright!",
-            f"I am really concerned about the impact of {topic} on jobs.",
-            f"Just saw a new update about {topic}, it's quite revolutionary.",
-            f"Absolute disaster implementation of {topic}. Very disappointed.",
-            f"Can't wait to see how {topic} evolves this year! High hopes."
+            f"The atmosphere at the stadium for {topic} is electric!",
+            f"I am really unhappy with the {topic} results today.",
+            f"Just saw a post about {topic}, looks interesting.",
+            f"Absolute disaster performance in {topic}. Boring!",
+            f"Can't wait for the next update on {topic}! So excited."
         ]
         
         results_df = []
@@ -102,13 +93,11 @@ elif option == "Live Topic Analysis":
             cleaned = clean_text(t)
             vec = tfidf.transform([cleaned])
             pred = model.predict(vec)[0]
-            results_df.append({"Social Media Post": t, "Sentiment Prediction": pred})
+            results_df.append({"Tweet": t, "Sentiment": pred})
         
         st.table(pd.DataFrame(results_df))
 
 # --- Footer ---
 st.sidebar.markdown("---")
-st.sidebar.subheader("Project Details")
-st.sidebar.write("✅ **Model Architecture:** SVM (Linear Kernel)")
-st.sidebar.write("✅ **Feature Extraction:** TF-IDF Vectorizer")
-st.sidebar.write("✅ **Source Dataset:** sentimentdataset.csv")
+st.sidebar.write("✅ **Model:** SVM (Linear)")
+st.sidebar.write("✅ **Dataset:** sentimentdataset.csv")
