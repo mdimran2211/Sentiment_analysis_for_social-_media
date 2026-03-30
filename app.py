@@ -8,7 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import SVC
 
 # --- Page Config ---
-st.set_page_config(page_title="Sentiment Analyzer Pro", layout="wide")
+st.set_page_config(page_title="Sentiment Analyzer Pro", layout="wide", page_icon="🚀")
 
 # --- NLP Resources ---
 @st.cache_resource
@@ -33,7 +33,6 @@ def clean_text(text):
 # --- Load & Train Model (Cached for Speed) ---
 @st.cache_resource
 def train_model():
-    # Make sure sentimentdataset.csv is in your GitHub folder
     df = pd.read_csv('sentimentdataset.csv')
     df['cleaned_text'] = df['Text'].apply(clean_text)
     df['Sentiment'] = df['Sentiment'].str.strip()
@@ -49,12 +48,21 @@ def train_model():
 model, tfidf = train_model()
 
 # --- Streamlit UI Header ---
-st.title("🚀 Social Media Sentiment Analysis Tool")
-st.markdown("Developed with **SVM (Support Vector Machine)** as per Project Synopsis.")
+st.title("🚀 Automated Sentiment Analysis Tool")
+st.markdown("### Harnessing the power of SVM (Support Vector Machine) for real-time classification of social media text and trends.")
+st.info("This system uses machine learning to categorize sentiments from unstructured social media data.")
 
-# Sidebar for Navigation
-option = st.sidebar.selectbox("Choose Action", ["Home & Manual Test", "Live Topic Analysis"])
+# --- Sidebar Design ---
+st.sidebar.header("Navigation")
+option = st.sidebar.selectbox("Choose Action", ["Live Topic Analysis", "Home & Manual Test"])
 
+st.sidebar.markdown("---")
+st.sidebar.subheader("Project Details")
+st.sidebar.write("✅ **Model Architecture:** SVM (Linear Kernel)")
+st.sidebar.write("✅ **Feature Extraction:** TF-IDF Vectorizer")
+st.sidebar.write("✅ **Source Dataset:** sentimentdataset.csv")
+
+# --- Logic for Options ---
 if option == "Home & Manual Test":
     st.subheader("📝 Analyze Custom Text")
     user_input = st.text_area("Enter a social media post/comment:", placeholder="Type here...")
@@ -65,22 +73,20 @@ if option == "Home & Manual Test":
             vec = tfidf.transform([cleaned])
             prediction = model.predict(vec)[0]
             
-            # Display Result with Color
             if any(word in prediction for word in ["Positive", "Joy", "Happy"]):
-                st.success(f"Classification: {prediction} 😊")
+                st.success(f"Sentiment Prediction: {prediction} 😊")
             elif any(word in prediction for word in ["Negative", "Angry", "Sad"]):
-                st.error(f"Classification: {prediction} 😠")
+                st.error(f"Sentiment Prediction: {prediction} 😠")
             else:
-                st.info(f"Classification: {prediction} 😐")
+                st.info(f"Sentiment Prediction: {prediction} 😐")
         else:
             st.warning("Please enter some text first.")
 
 elif option == "Live Topic Analysis":
-    st.subheader("🌐 Real-time Simulation (API Fallback)")
-    topic = st.text_input("Enter a trending topic to simulate analysis:", "snapchat")
+    st.subheader("🌐 Real-time Simulation (Market Trend Analysis)")
+    topic = st.text_input("Enter a trending topic to simulate analysis:", "Artificial Intelligence")
     
-    if st.button("Fetch & Analyze"):
-        # Wahi exact sentences jo aapke screenshot mein hain
+    if st.button("Fetch & Analyze Trends"):
         mock_tweets = [
             f"The future of {topic} looks incredibly promising and bright!",
             f"I am really concerned about the impact of {topic} on jobs.",
@@ -94,12 +100,6 @@ elif option == "Live Topic Analysis":
             cleaned = clean_text(t)
             vec = tfidf.transform([cleaned])
             pred = model.predict(vec)[0]
-            results_df.append({"Tweet": t, "Sentiment": pred})
+            results_df.append({"Social Media Post": t, "Sentiment Prediction": pred})
         
-        # Display as Table like in your screenshot
         st.table(pd.DataFrame(results_df))
-
-# --- Footer ---
-st.sidebar.markdown("---")
-st.sidebar.write("✅ **Model:** SVM (Linear)")
-st.sidebar.write("✅ **Dataset:** sentimentdataset.csv")
