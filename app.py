@@ -33,6 +33,7 @@ def clean_text(text):
 # --- Load & Train Model (Cached for Speed) ---
 @st.cache_resource
 def train_model():
+    # Make sure sentimentdataset.csv is in your GitHub folder
     df = pd.read_csv('sentimentdataset.csv')
     df['cleaned_text'] = df['Text'].apply(clean_text)
     df['Sentiment'] = df['Sentiment'].str.strip()
@@ -47,7 +48,7 @@ def train_model():
 
 model, tfidf = train_model()
 
-# --- Streamlit UI ---
+# --- Streamlit UI Header ---
 st.title("🚀 Social Media Sentiment Analysis Tool")
 st.markdown("Developed with **SVM (Support Vector Machine)** as per Project Synopsis.")
 
@@ -65,27 +66,27 @@ if option == "Home & Manual Test":
             prediction = model.predict(vec)[0]
             
             # Display Result with Color
-            if "Positive" in prediction:
-                st.success(f"Sentiment: {prediction} 😊")
-            elif "Negative" in prediction:
-                st.error(f"Sentiment: {prediction} 😠")
+            if any(word in prediction for word in ["Positive", "Joy", "Happy"]):
+                st.success(f"Classification: {prediction} 😊")
+            elif any(word in prediction for word in ["Negative", "Angry", "Sad"]):
+                st.error(f"Classification: {prediction} 😠")
             else:
-                st.info(f"Sentiment: {prediction} 😐")
+                st.info(f"Classification: {prediction} 😐")
         else:
             st.warning("Please enter some text first.")
 
 elif option == "Live Topic Analysis":
     st.subheader("🌐 Real-time Simulation (API Fallback)")
-    topic = st.text_input("Enter a trending topic:", "IPL 2024")
+    topic = st.text_input("Enter a trending topic to simulate analysis:", "snapchat")
     
     if st.button("Fetch & Analyze"):
-        # Simulated Live Tweets
+        # Wahi exact sentences jo aapke screenshot mein hain
         mock_tweets = [
-            f"The atmosphere at the stadium for {topic} is electric!",
-            f"I am really unhappy with the {topic} results today.",
-            f"Just saw a post about {topic}, looks interesting.",
-            f"Absolute disaster performance in {topic}. Boring!",
-            f"Can't wait for the next update on {topic}! So excited."
+            f"The future of {topic} looks incredibly promising and bright!",
+            f"I am really concerned about the impact of {topic} on jobs.",
+            f"Just saw a new update about {topic}, it's quite revolutionary.",
+            f"Absolute disaster implementation of {topic}. Very disappointed.",
+            f"Can't wait to see how {topic} evolves this year! High hopes."
         ]
         
         results_df = []
@@ -95,6 +96,7 @@ elif option == "Live Topic Analysis":
             pred = model.predict(vec)[0]
             results_df.append({"Tweet": t, "Sentiment": pred})
         
+        # Display as Table like in your screenshot
         st.table(pd.DataFrame(results_df))
 
 # --- Footer ---
