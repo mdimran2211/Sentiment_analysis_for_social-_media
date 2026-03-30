@@ -11,7 +11,6 @@ from sklearn.svm import SVC
 # --- Page Config ---
 st.set_page_config(page_title="Sentiment Analyzer Pro", layout="wide", page_icon="🚀")
 
-# --- NLP Resources ---
 @st.cache_resource
 def load_resources():
     try:
@@ -31,30 +30,46 @@ def clean_text(text):
     cleaned = [ps.stem(w) for w in words if w not in stop_words]
     return " ".join(cleaned)
 
+# --- NEW: Sentiment Mapping Function ---
+def map_sentiment(label):
+    label = str(label).strip().lower()
+    pos_list = ['positive', 'joy', 'happy', 'excited', 'serenity', 'contentment', 'gratitude', 'admiration']
+    neg_list = ['negative', 'angry', 'sad', 'bad', 'hate', 'disappointed', 'disgust', 'fear', 'shame']
+    
+    if any(word in label for word in pos_list):
+        return "Positive"
+    elif any(word in label for word in neg_list):
+        return "Negative"
+    else:
+        return "Neutral"
+
 # --- Load & Train Model ---
 @st.cache_resource
 def train_model():
     df = pd.read_csv('sentimentdataset.csv')
-    df['cleaned_text'] = df['Text'].apply(clean_text)
-    df['Sentiment'] = df['Sentiment'].str.strip()
+    df.columns = df.columns.str.strip()
     
-    # Balanced weights taaki model sirf positive na seekhe
+    # Dataset ke labels ko map karna (Mapping complex labels to simple ones)
+    df['Sentiment'] = df['Sentiment'].apply(map_sentiment) #
+    
+    df['cleaned_text'] = df['Text'].apply(clean_text)
+    
     tfidf = TfidfVectorizer(ngram_range=(1,2), max_features=5000)
     X = tfidf.fit_transform(df['cleaned_text'])
     y = df['Sentiment']
     
+    # Model tuning
     model = SVC(kernel='linear', probability=True, class_weight='balanced')
     model.fit(X, y)
     return model, tfidf
 
 model, tfidf = train_model()
 
-# --- UI Header (Exactly like your screenshot) ---
+# --- UI Layout (Exactly like your screenshot) ---
 st.title("🚀 Automated Sentiment Analysis Tool")
 st.markdown("### Harnessing the power of SVM (Support Vector Machine) for real-time classification of social media text and trends.")
 st.info("This system uses machine learning to categorize sentiments from unstructured social media data.")
 
-# --- Sidebar ---
 st.sidebar.header("Navigation")
 option = st.sidebar.selectbox("Choose Action", ["Live Topic Analysis", "Home & Manual Test"])
 
@@ -69,21 +84,16 @@ if option == "Live Topic Analysis":
     topic = st.text_input("Enter a trending topic to simulate analysis:", "Artificial Intelligence")
     
     if st.button("Fetch & Analyze Trends"):
-        # Yahan humne diverse templates dale hain taaki results mix aayein
         templates = [
             f"The future of {topic} looks incredibly promising and bright!", # Positive
             f"I am really concerned about the negative impact of {topic} on jobs.", # Negative
             f"Just saw a new technical update about {topic}, it is quite complex.", # Neutral
             f"Absolute disaster implementation of {topic}. Very disappointed.", # Negative
-            f"Is anyone else using {topic} today? Just wondering.", # Neutral
-            f"I love how {topic} makes my work so much easier!", # Positive
             f"This new version of {topic} is full of bugs and very slow.", # Negative
             f"Comparing {topic} with other alternatives in the market." # Neutral
         ]
         
-        # Har baar random 5 uthayega
         selected_posts = random.sample(templates, 5)
-        
         results_df = []
         for t in selected_posts:
             cleaned = clean_text(t)
