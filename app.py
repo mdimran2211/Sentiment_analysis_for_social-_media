@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import re
 import nltk
+import random
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -30,29 +31,30 @@ def clean_text(text):
     cleaned = [ps.stem(w) for w in words if w not in stop_words]
     return " ".join(cleaned)
 
-# --- Load & Train Model (Cached for Speed) ---
+# --- Load & Train Model ---
 @st.cache_resource
 def train_model():
     df = pd.read_csv('sentimentdataset.csv')
     df['cleaned_text'] = df['Text'].apply(clean_text)
     df['Sentiment'] = df['Sentiment'].str.strip()
     
+    # Balanced weights taaki model sirf positive na seekhe
     tfidf = TfidfVectorizer(ngram_range=(1,2), max_features=5000)
     X = tfidf.fit_transform(df['cleaned_text'])
     y = df['Sentiment']
     
-    model = SVC(kernel='linear', probability=True)
+    model = SVC(kernel='linear', probability=True, class_weight='balanced')
     model.fit(X, y)
     return model, tfidf
 
 model, tfidf = train_model()
 
-# --- Streamlit UI Header ---
+# --- UI Header (Exactly like your screenshot) ---
 st.title("🚀 Automated Sentiment Analysis Tool")
 st.markdown("### Harnessing the power of SVM (Support Vector Machine) for real-time classification of social media text and trends.")
 st.info("This system uses machine learning to categorize sentiments from unstructured social media data.")
 
-# --- Sidebar Design ---
+# --- Sidebar ---
 st.sidebar.header("Navigation")
 option = st.sidebar.selectbox("Choose Action", ["Live Topic Analysis", "Home & Manual Test"])
 
@@ -62,44 +64,41 @@ st.sidebar.write("✅ **Model Architecture:** SVM (Linear Kernel)")
 st.sidebar.write("✅ **Feature Extraction:** TF-IDF Vectorizer")
 st.sidebar.write("✅ **Source Dataset:** sentimentdataset.csv")
 
-# --- Logic for Options ---
-if option == "Home & Manual Test":
-    st.subheader("📝 Analyze Custom Text")
-    user_input = st.text_area("Enter a social media post/comment:", placeholder="Type here...")
-    
-    if st.button("Predict Sentiment"):
-        if user_input:
-            cleaned = clean_text(user_input)
-            vec = tfidf.transform([cleaned])
-            prediction = model.predict(vec)[0]
-            
-            if any(word in prediction for word in ["Positive", "Joy", "Happy"]):
-                st.success(f"Sentiment Prediction: {prediction} 😊")
-            elif any(word in prediction for word in ["Negative", "Angry", "Sad"]):
-                st.error(f"Sentiment Prediction: {prediction} 😠")
-            else:
-                st.info(f"Sentiment Prediction: {prediction} 😐")
-        else:
-            st.warning("Please enter some text first.")
-
-elif option == "Live Topic Analysis":
+if option == "Live Topic Analysis":
     st.subheader("🌐 Real-time Simulation (Market Trend Analysis)")
     topic = st.text_input("Enter a trending topic to simulate analysis:", "Artificial Intelligence")
     
     if st.button("Fetch & Analyze Trends"):
-        mock_tweets = [
-            f"The future of {topic} looks incredibly promising and bright!",
-            f"I am really concerned about the impact of {topic} on jobs.",
-            f"Just saw a new update about {topic}, it's quite revolutionary.",
-            f"Absolute disaster implementation of {topic}. Very disappointed.",
-            f"Can't wait to see how {topic} evolves this year! High hopes."
+        # Yahan humne diverse templates dale hain taaki results mix aayein
+        templates = [
+            f"The future of {topic} looks incredibly promising and bright!", # Positive
+            f"I am really concerned about the negative impact of {topic} on jobs.", # Negative
+            f"Just saw a new technical update about {topic}, it is quite complex.", # Neutral
+            f"Absolute disaster implementation of {topic}. Very disappointed.", # Negative
+            f"Is anyone else using {topic} today? Just wondering.", # Neutral
+            f"I love how {topic} makes my work so much easier!", # Positive
+            f"This new version of {topic} is full of bugs and very slow.", # Negative
+            f"Comparing {topic} with other alternatives in the market." # Neutral
         ]
         
+        # Har baar random 5 uthayega
+        selected_posts = random.sample(templates, 5)
+        
         results_df = []
-        for t in mock_tweets:
+        for t in selected_posts:
             cleaned = clean_text(t)
             vec = tfidf.transform([cleaned])
             pred = model.predict(vec)[0]
             results_df.append({"Social Media Post": t, "Sentiment Prediction": pred})
         
         st.table(pd.DataFrame(results_df))
+
+elif option == "Home & Manual Test":
+    st.subheader("📝 Analyze Custom Text")
+    user_input = st.text_area("Enter a social media post/comment:", placeholder="Type here...")
+    if st.button("Predict Sentiment"):
+        if user_input:
+            cleaned = clean_text(user_input)
+            vec = tfidf.transform([cleaned])
+            prediction = model.predict(vec)[0]
+            st.write(f"### Predicted Sentiment: {prediction}")
