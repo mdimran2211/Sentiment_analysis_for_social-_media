@@ -1,1 +1,5 @@
-pip freeze > requirements.txt
+streamlit
+pandas
+scikit-learn
+nltk
+numpy
