@@ -27,24 +27,31 @@ def load_resources():
 stop_words, ps = load_resources()
 
 def clean_text(text):
-    text = re.sub(r"(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", str(text))
-    text = text.lower()
+    # Sirf URLs aur handle hatayein
+    text = re.sub(r"(@[A-Za-z0-9]+)|(\w+:\/\/\S+)", " ", str(text))
+    # Punctuation hatayein par words rehne dein
+    text = re.sub(r"[^a-zA-Z\s]", " ", text)
+    text = text.lower().strip()
     words = text.split()
     cleaned = [ps.stem(w) for w in words if w not in stop_words]
     return " ".join(cleaned)
 
-# --- Load & Train Model (Cached for Speed) ---
+# --- Load & Train Model (Advanced Tuning) ---
 @st.cache_resource
 def train_model():
     df = pd.read_csv('sentimentdataset.csv') 
+    df.columns = df.columns.str.strip() # Extra spaces hatane ke liye
+    
     df['cleaned_text'] = df['Text'].apply(clean_text)
     df['Sentiment'] = df['Sentiment'].str.strip()
     
-    tfidf = TfidfVectorizer(ngram_range=(1,2), max_features=5000)
+    # N-grams (1,3) add kiya taaki "not happy" jaise words model samajh sake
+    tfidf = TfidfVectorizer(ngram_range=(1, 3), max_features=10000, min_df=2)
     X = tfidf.fit_transform(df['cleaned_text'])
     y = df['Sentiment']
     
-    model = SVC(kernel='linear', probability=True)
+    # class_weight='balanced' model ko har sentiment barabar sikhayega
+    model = SVC(kernel='linear', probability=True, class_weight='balanced', C=0.8)
     model.fit(X, y)
     return model, tfidf, df
 
@@ -75,9 +82,10 @@ if option == "Home & Manual Test":
             with col1:
                 st.metric(label="Predicted Sentiment", value=prediction)
             with col2:
-                if any(word in prediction for word in ["Positive", "Joy", "Happy"]):
+                # Better Color Logic
+                if any(word in prediction for word in ["Positive", "Joy", "Happy", "Excited"]):
                     st.success(f"Classification: **{prediction}** 😊")
-                elif any(word in prediction for word in ["Negative", "Angry", "Sad"]):
+                elif any(word in prediction for word in ["Negative", "Angry", "Sad", "Bad", "Hate"]):
                     st.error(f"Classification: **{prediction}** 😠")
                 else:
                     st.info(f"Classification: **{prediction}** 😐")
@@ -86,9 +94,10 @@ if option == "Home & Manual Test":
 
 elif option == "Live Topic Analysis":
     st.subheader("🌐 Real-time Simulation (Trend Analysis)")
-    topic = st.text_input("Enter a trending topic:", "Social Media")
+    topic = st.text_input("Enter a trending topic:", "Snapchat")
     
     if st.button("Fetch & Analyze Trends", use_container_width=True):
+        # Diverse Templates for better results
         templates = [
             f"The future of {topic} looks incredibly promising!",
             f"I am really concerned about the privacy in {topic}.",
@@ -100,24 +109,22 @@ elif option == "Live Topic Analysis":
             f"The customer support for {topic} is absolutely pathetic."
         ]
         
-        selected_tweets = random.sample(templates, 5)
+        selected_tweets = random.sample(templates, 6)
         results_df = []
         for t in selected_tweets:
             cleaned = clean_text(t)
             vec = tfidf.transform([cleaned])
             pred = model.predict(vec)[0]
-            results_df.append({"Post": t, "Sentiment": pred})
+            results_df.append({"Post": t, "Sentiment Prediction": pred})
         
         res_df = pd.DataFrame(results_df)
         st.table(res_df)
         
-        # Simple Bar Chart for simulation results
         st.write("### 📊 Distribution of Simulated Trends")
-        st.bar_chart(res_df['Sentiment'].value_counts())
+        st.bar_chart(res_df['Sentiment Prediction'].value_counts())
 
 elif option == "Visual Insights & Metrics":
     st.subheader("📊 Model Performance & Data Insights")
-    
     tab1, tab2 = st.tabs(["WordCloud Analysis", "Accuracy Metrics"])
     
     with tab1:
@@ -128,7 +135,6 @@ elif option == "Visual Insights & Metrics":
         ax.imshow(wc, interpolation='bilinear')
         ax.axis("off")
         st.pyplot(fig)
-        st.caption("Larger words indicate higher frequency in the sentiment dataset.")
 
     with tab2:
         st.write("### 📈 Model Accuracy Comparison")
@@ -137,11 +143,11 @@ elif option == "Visual Insights & Metrics":
             'Accuracy (%)': [91.2, 84.5, 87.8, 85.1]
         })
         st.bar_chart(comparison_df.set_index('Model'))
-        st.success("Current Model (SVM) outperforms others with 91.2% accuracy.")
+        st.success("SVM with Balanced Class Weights selected as the primary model.")
 
 # --- Footer ---
 st.sidebar.markdown("---")
 st.sidebar.subheader("Project Details")
 st.sidebar.write("✅ **Model:** SVM (Linear Kernel)")
-st.sidebar.write("✅ **Feature Extraction:** TF-IDF")
+st.sidebar.write("✅ **Feature Extraction:** TF-IDF (1-3 Grams)")
 st.sidebar.write("✅ **Dataset:** sentimentdataset.csv")
